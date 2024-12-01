@@ -1,4 +1,4 @@
-const { DEBUG, log, getRaw, toTrimmedLines } = require('../util');
+const { DEBUG, getRaw, FrequencyMap } = require('../util');
 
 let raw = getRaw();
 if (DEBUG) {
@@ -10,31 +10,24 @@ if (DEBUG) {
 3   3`;
 }
 
-function part1(lines) {
-    lines = lines.map(l => l.split(/\s+/)).map(l => l.map(Number));
-    
-    const firstList = lines.map(l => l[0]);
-    const secondList = lines.map(l => l[1]);
-    firstList.sort();
-    secondList.sort();
-    
-    let diffSum = 0;
-    for(let i=0; i<firstList.length; i++) {
-        diffSum += Math.abs(firstList[i] - secondList[i]);
-    }
-
-    return diffSum;
+function getLists(raw) {
+    const tokens = raw.trim().split(/[\s]+/g).map(Number);
+    return [
+        tokens.filter((_, i) => i%2 === 0),
+        tokens.filter((_, i) => i%2 === 1)
+    ];
 }
 
-function part2(lines) {
-    lines = lines.map(l => l.split(/\s+/)).map(l => l.map(Number));
-    
-    const firstList = lines.map(l => l[0]);
-    const secondElems = Object.groupBy(lines.map(l => l[1]), i => i);
-    return firstList.reduce((p, c) => p + (c * (secondElems[c]?.length || 0)), 0);
+function part1(raw) {
+    const [list1, list2] = getLists(raw).map(l => l.sort());
+    return list1.reduce((p, c, i) => p + Math.abs(c - list2[i]), 0);
 }
 
-const lines = toTrimmedLines(raw);
+function part2() {
+    const [list1, list2] = getLists(raw);
+    const valueCount = new FrequencyMap(list2);
+    return list1.reduce((p, c) => p + (c * valueCount.getOrDefault(c, 0)), 0);
+}
 
-console.log(part1(lines));
-console.log(part2(lines));
+console.log(part1(raw));
+console.log(part2(raw));

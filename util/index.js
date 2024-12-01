@@ -65,6 +65,25 @@ function getFrequencies(arr) {
     })).sort((a, b) => b.count - a.count);
 }
 
+class FrequencyMap {
+    constructor(arr) {
+        this.uniqueValues = Array.from(new Set(arr));
+        this.uniqueValues.forEach(v => this[v] = arr.filter(a => a === v).length);
+    }
+    getOrDefault(k, d) {
+        if (this[k] !== undefined) {
+            return this[k];
+        }
+        return d;
+    }
+    getAll() {
+        return this.uniqueValues.map(v => ({
+            value: v,
+            count: this[v]
+        })).sort((a, b) => b.count - a.count);
+    }
+}
+
 
 function lcm(...numbers) {
   // Helper function to calculate the Greatest Common Divisor (GCD) of two numbers
@@ -94,5 +113,6 @@ module.exports = {
     deepClone,
     recursiveCompare,
     getFrequencies,
+    FrequencyMap,
     lcm
 };
