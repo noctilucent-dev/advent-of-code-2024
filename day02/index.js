@@ -10,45 +10,37 @@ if (DEBUG) {
 1 3 6 7 9`;
 }
 
-function part1(lines) {
-    lines = lines.map(l => l.split(" ").map(Number));
-    lines = lines.map(l => l.map((v, i) => i > 0 ? v - l[i-1] : 0));
-    lines.forEach(l => l.shift());
-    lines = lines.filter(l => l.every(v => Math.abs(v) <= 3));
-    lines = lines.filter(l => l.every(v => v > 0) || l.every(v => v < 0));
-    log(lines);
-    return lines.length;
-}
-
-function isValid(l) {
+function isSafe(l) {
+    // map to deltas
     l = l.map((v, i) => i > 0 ? v - l[i-1] : 0);
+    // ignore first element
     l.shift();
+
+    // Check maximum delta
     if (!l.every(v => Math.abs(v) <=3)) {
         return false;
     }
 
+    // Check consistent increase/decrease
     return l.every(v => v > 0) || l.every(v => v < 0);
 }
 
-function part2(lines) {
-    lines = lines.map(l => l.split(" ").map(Number));
-    lines = lines.filter(l => {
-        if (isValid(l)) return true;
-
-        for(let i=0; i<l.length; i++) {
-            let l2 = [...l];
-            l2.splice(i, 1);
-            log(l2);
-            if (isValid(l2)) return true;
-        }
-
-        return false;
-    });
-    log(lines);
-    return lines.length;
+function part1(lines) {
+    return lines.filter(isSafe).length;
 }
 
-const lines = toTrimmedLines(raw);
+function part2(lines) {
+    return lines.filter(l => isSafe(l) ||
+        l.some((_, i) => {
+            // Create a copy with element removed
+            let l2 = [...l];
+            l2.splice(i, 1);
+            
+            return isSafe(l2);
+        })).length;
+}
+
+const lines = toTrimmedLines(raw).map(l => l.split(" ").map(Number));
 
 console.log(part1(lines));
 console.log(part2(lines));
