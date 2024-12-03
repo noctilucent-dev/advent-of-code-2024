@@ -6,42 +6,27 @@ if (DEBUG) {
 }
 
 function part1(raw) {
-    const r = /mul\((\d+),(\d+)\)/g;
-    let instructions = raw.match(r);
-    log(instructions);
-    instructions = instructions.map(i => {
-        const parts = i.match(/\d+/g);
-        return parts[0] * parts[1];
-    });
-    return instructions.reduce((p, c) => p + c, 0);
-    log(instructions);
+    return raw.match(/mul\(\d+,\d+\)/g)
+        .map(i => i.match(/\d+/g).reduce((p,c) => p*c))
+        .reduce((p, c) => p + c);
 }
 
 function part2(raw) {
-    const r = /(mul\(\d+,\d+\))|(do\(\))|(don't\(\))/g;
-    let instructions = raw.match(r);
-    let sum = 0;
-    let enabled = true;
-    log(instructions);
+    return raw
+        .match(/(mul\(\d+,\d+\))|(do\(\))|(don't\(\))/g)
+        .reduce(([sum, enabled], i) => {
+            if (i === "do()") {
+                return [sum, true];
+            }
+            if (i === "don't()") {
+                return [sum, false];
+            }
+            if(!enabled) {
+                return [sum, false];
+            }
 
-    instructions.forEach(instr => {
-        if (instr === "do()") {
-            enabled = true;
-            return;
-        }
-        if (instr === "don't()") {
-            enabled = false;
-            return;
-        }
-        if (!enabled) {
-            return;
-        }
-
-        const parts = instr.match(/\d+/g);
-        sum += parts[0] * parts[1];
-    });
-
-    return sum;
+            return [sum + i.match(/\d+/g).reduce((p,c) => p*c), true];
+        }, [0, true])[0];
 }
 
 console.log(part1(raw));
