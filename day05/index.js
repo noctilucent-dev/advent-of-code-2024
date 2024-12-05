@@ -42,108 +42,116 @@ function parse(raw) {
     };
 }
 
-function part1(rules, updates) {
-    log(rules);
-    log(updates);
+/**
+ * Represents an abstract graph.
+ * Stores nodes (array) and edges (map of node => Set of children).
+ */
+class Graph {
+    constructor(nodes, edges) {
+        this.nodes = nodes;
+        this.edges = edges;
+    }
 
-    const g = {};
+    /**
+     * Finds a leaf node in the graph 
+     * @returns a leaf node
+     */
+    leaf() {
+        return this.nodes.find(n => this.edges[n].size === 0);
+    }
+
+    clone() {
+        let e2 = {...this.edges};
+        this.nodes.forEach(n => e2[n] = new Set(e2[n]))
+
+        let n2 = [...this.nodes];
+
+        return new Graph(n2, e2);
+    }
+
+    /**
+     * Completely removes the specified node from the graph
+     * @param {*} n 
+     */
+    delete(n) {
+        this.nodes.forEach(n2 => this.edges[n2].delete(n));
+        this.nodes.splice(this.nodes.indexOf(n), 1);
+        delete this.edges[n];
+    }
+}
+
+/**
+ * Converts a list of rules into a graph.
+ * Each page number is a node.
+ * Each rule is an edge.
+ * 
+ * @param {[string[]]} rules List of rules (array of pairs of page numbers)
+ * @returns the graph
+ */
+function createGraphFromRules(rules) {
+    let edges = {};
     rules.forEach(([a, b]) => {
-        if (!g[a]) g[a] = new Set();
-        if (!g[b]) g[b] = new Set();
-        g[a].add(b);
+        if (!edges[a]) edges[a] = new Set();
+        if (!edges[b]) edges[b] = new Set();
+        edges[a].add(b);
     });
-    log(g);
+    let nodes = Array.from(new Set(rules.flatMap(c => c)));
 
-    // const ranks = {};
-    // for(let i=0; true; i++) {
-    //     const nodes = Object.getOwnPropertyNames(g);
-    //     const leaves = nodes.filter(k => g[k].size === 0);
-    //     log(leaves);
-    //     if (leaves.length === 0) {
-    //         break;
-    //     }
+    return new Graph(nodes, edges);
+}
 
-    //     leaves.forEach(l => {
-    //         log(`Removing leaf ${l} with rank ${i}`);
-    //         ranks[l] = i;
-    //         nodes.forEach(n => g[n].delete(l));
-    //         delete g[l];
-    //     });
-
-    //     log(g);
-    // }
-
-    // log(ranks);
-    // console.log(ranks);
-
-    const valid = updates.filter(u => {
-        for(let i=0; i<u.length-1; i++) {
-            for(let j=i+1; j<u.length; j++) {
-                if (g[u[j]].has(u[i])) {
-                    return false;
-                }
+/**
+ * Determines whether a list of pages is valid given the rules.
+ * @param {string[]} pages 
+ * @param {{string: string[]}} rules
+ * @returns 
+ */
+function isValid(pages, rules) {
+    for(let i=0; i<pages.length-1; i++) {
+        for(let j=i+1; j<pages.length; j++) {
+            if (rules[pages[j]].has(pages[i])) {
+                return false;
             }
         }
-        return true;
-    });
-    return valid.map(u => u[Math.floor(u.length/2)] * 1).reduce((p, c) => p+c);
+    }
+    return true;
+}
+
+function getSumOfMiddleValues(updates) {
+    return updates.map(u => u[Math.floor(u.length/2)] * 1).reduce((p, c) => p+c)
+}
+
+function part1(rules, updates) {
+    const g = createGraphFromRules(rules);
+    const valid = updates.filter(u => isValid(u, g.edges));
+
+    return getSumOfMiddleValues(valid);
 }
 
 function part2(rules, updates) {
-    const g = {};
-    const allNodes = Array.from(new Set(rules.flatMap(c => c)));
-    log(allNodes);
-    rules.forEach(([a, b]) => {
-        if (!g[a]) g[a] = new Set();
-        if (!g[b]) g[b] = new Set();
-        g[a].add(b);
-    });
-    log(g);
+    const g = createGraphFromRules(rules);
 
-    const invalid = updates.filter(u => {
-        for(let i=0; i<u.length-1; i++) {
-            for(let j=i+1; j<u.length; j++) {
-                if (g[u[j]].has(u[i])) {
-                    return true;
-                }
+    const modified = updates
+        .filter(u => !isValid(u, g.edges))
+        .map(u => {
+            let g2 = g.clone();
+
+            // Remove all nodes not in the page list
+            g2.nodes
+                .filter(n => !u.some(v => v === n))
+                .forEach(n => g2.delete(n));
+
+            // Extract each leaf from the graph until none left
+            const newUpdate = [];
+            for (let leaf = g2.leaf(); leaf; leaf = g2.leaf()) {
+                newUpdate.push(leaf);
+                g2.delete(leaf);
             }
-        }
-        return false;
-    });
 
-    log(invalid);
-
-    let changed = invalid.map(u => {
-        let g2 = {...g};
-        Object.getOwnPropertyNames(g2).forEach(n => g2[n] = new Set(g2[n]));
-        const toDelete = allNodes.filter(n => !u.some(v => v === n));
-        log(toDelete);
-        toDelete.forEach(n => {
-            delete g2[n];
+            return newUpdate.reverse();
         });
-        u.forEach(n => {
-            log(`Deleting ${toDelete} from ${Array.from(g2[n])}`);
-            toDelete.forEach(d => g2[n].delete(d));
-        })
-        log(g2);
-        const newUpdate = [];
-        while(true) {
-            const nodes = Object.getOwnPropertyNames(g2);
-            const leaves = nodes.filter(n => g2[n].size === 0);
-            if (leaves.length === 0) {
-                break;
-            }
-            const leaf = leaves[0];
-            newUpdate.push(leaf);
-            nodes.forEach(n => g2[n].delete(leaf));
-            delete g2[leaf];
-        }
-        return newUpdate.reverse();
-    });
 
-    log(changed);
-
-    return changed.map(u => u[Math.floor(u.length/2)] * 1).reduce((p, c) => p+c);
+    return getSumOfMiddleValues(modified);
 }
 
 const {rules, updates} = parse(raw);
