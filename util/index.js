@@ -85,6 +85,10 @@ class FrequencyMap {
 }
 
 
+function gcd(a, b) {
+  return !b ? a : gcd(b, a % b);
+}
+
 function lcm(...numbers) {
   // Helper function to calculate the Greatest Common Divisor (GCD) of two numbers
   function gcd(a, b) {
@@ -114,5 +118,6 @@ module.exports = {
     recursiveCompare,
     getFrequencies,
     FrequencyMap,
-    lcm
+    lcm,
+    gcd
 };
