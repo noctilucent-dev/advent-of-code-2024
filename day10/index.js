@@ -70,6 +70,62 @@ function part1(lines) {
     return score;
 }
 
+function part2(lines) {
+    const vectors = [
+        [0, -1], // N
+        [1, 0],  // E
+        [0, 1],  // S
+        [-1, 0]  // W
+    ];
+    const m = lines.map(l => l.split("").map(Number));
+    const g = [];
+    let leaves = new Set();
+    for(let y=0; y<m.length; y++) {
+        g[y] = [];
+        for(let x=0; x<m[y].length; x++) {
+            g[y][x] = new Set();
+            if (m[y][x] === 9) {
+                leaves.add(JSON.stringify([x,y]));
+                g[y][x].add(JSON.stringify([[x,y]]));
+            }
+        }
+    }
+
+    log(leaves);
+    for(let val=9; val > 0; val--) {
+        const l = Array.from(leaves).map(JSON.parse);
+        leaves = new Set();
+        l.forEach(([lx, ly]) => {
+            log(`Looking for adjacent to ${val} at (${lx},${ly})`);
+            let adjacent =  vectors
+                .map(([dx, dy]) => [lx+dx, ly+dy])
+                .filter(([x,y]) => inBounds(x, y, m))
+                .filter(([x, y]) => m[y][x] === val - 1);
+            
+            log(adjacent);
+
+            adjacent.forEach(([x, y]) => {
+                g[ly][lx].forEach(p => {
+                    log(`Adding path ${p} + [${x},${y}]`);
+                    const path = JSON.parse(p);
+                    path.push([x, y]);
+                    g[y][x].add(JSON.stringify(path));
+                });
+                leaves.add(JSON.stringify([x,y]));
+            });
+        });
+        log(leaves);
+    }
+
+    let score = 0;
+    leaves.forEach(l => {
+        const [x,y] = JSON.parse(l);
+        score += g[y][x].size;
+    })
+    return score;
+}
+
 const lines = toTrimmedLines(raw);
 
 console.log(part1(lines));
+console.log(part2(lines));
